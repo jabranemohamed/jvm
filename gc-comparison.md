@@ -1,29 +1,29 @@
-# Comparaison G1GC vs ZGC vs Parallel GC
+# G1GC vs ZGC vs Parallel GC Comparison
 
 ## Introduction
 
-Le choix du Garbage Collector (GC) est crucial pour les performances d'une application Java. Chaque collecteur a ses propres caractéristiques, avantages et cas d'usage optimaux. Ce guide compare en détail les trois collecteurs les plus utilisés en production.
+Choosing the right Garbage Collector (GC) is crucial for Java application performance. Each collector has its own characteristics, advantages, and optimal use cases. This guide provides a detailed comparison of the three most commonly used collectors in production.
 
-## Vue d'ensemble des Collecteurs
+## Collectors Overview
 
 ### Parallel GC (ParallelGC)
-- **Type** : Collecteur générationnel stop-the-world
-- **Disponibilité** : Depuis Java 1.4, par défaut jusqu'à Java 8
-- **Philosophie** : Maximiser le débit (throughput) au détriment de la latence
+- **Type**: Generational stop-the-world collector
+- **Availability**: Since Java 1.4, default until Java 8
+- **Philosophy**: Maximize throughput at the expense of latency
 
 ### G1GC (Garbage First)
-- **Type** : Collecteur générationnel à faible latence
-- **Disponibilité** : Depuis Java 7, par défaut depuis Java 9
-- **Philosophie** : Équilibre entre débit et latence avec des pauses prévisibles
+- **Type**: Low-latency generational collector
+- **Availability**: Since Java 7, default since Java 9
+- **Philosophy**: Balance between throughput and latency with predictable pauses
 
 ### ZGC (Z Garbage Collector)
-- **Type** : Collecteur concurrent à très faible latence
-- **Disponibilité** : Depuis Java 11 (expérimental), production ready depuis Java 17
-- **Philosophie** : Latence ultra-faible indépendamment de la taille du heap
+- **Type**: Concurrent ultra-low latency collector
+- **Availability**: Since Java 11 (experimental), production ready since Java 17
+- **Philosophy**: Ultra-low latency independent of heap size
 
-## Comparaison Détaillée
+## Detailed Comparison
 
-### 1. Architecture et Fonctionnement
+### 1. Architecture and Operation
 
 #### Parallel GC
 ```
@@ -36,74 +36,74 @@ Le choix du Garbage Collector (GC) est crucial pour les performances d'une appli
 └─────┴───────────┴───────────────────┘
 ```
 
-**Caractéristiques :**
-- Division classique Young/Old Generation
-- Collection parallèle avec tous les threads disponibles
-- Stop-the-world complet pendant la collection
-- Algorithme mark-sweep-compact pour l'Old Generation
+**Characteristics:**
+- Classic Young/Old Generation division
+- Parallel collection using all available threads
+- Complete stop-the-world during collection
+- Mark-sweep-compact algorithm for Old Generation
 
 #### G1GC
 ```
 ┌─────────────────────────────────────┐
-│          Heap divisé en régions     │
+│        Heap divided into regions    │
 ├───┬───┬───┬───┬───┬───┬───┬───┬───┤
 │ E │ S │ O │ E │ S │ O │ H │ E │ O │
 └───┴───┴───┴───┴───┴───┴───┴───┴───┘
 E = Eden, S = Survivor, O = Old, H = Humongous
 ```
 
-**Caractéristiques :**
-- Heap divisé en régions de taille fixe (1MB à 32MB)
-- Collection incrémentale avec pause-time goals
-- Concurrent marking pour l'Old Generation
-- Evacuation pause pour le compactage
+**Characteristics:**
+- Heap divided into fixed-size regions (1MB to 32MB)
+- Incremental collection with pause-time goals
+- Concurrent marking for Old Generation
+- Evacuation pause for compaction
 
 #### ZGC
 ```
 ┌─────────────────────────────────────┐
-│     Heap avec Colored Pointers      │
+│     Heap with Colored Pointers      │
 ├─────────────────────────────────────┤
-│  Objects + Metadata dans pointeurs │
-│     Collection concurrente          │
+│  Objects + Metadata in pointers    │
+│     Concurrent collection           │
 └─────────────────────────────────────┘
 ```
 
-**Caractéristiques :**
-- Non-generational par défaut (generational disponible depuis Java 21)
-- Colored pointers pour le tracking d'objets
-- Collection entièrement concurrente
-- Load barriers pour la cohérence
+**Characteristics:**
+- Non-generational by default (generational available since Java 21)
+- Colored pointers for object tracking
+- Fully concurrent collection
+- Load barriers for consistency
 
-### 2. Performance et Latence
+### 2. Performance and Latency
 
-| Métrique | Parallel GC | G1GC | ZGC |
-|----------|-------------|------|-----|
-| **Débit (Throughput)** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Latence moyenne** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Pauses max** | ⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Prédictibilité** | ⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Évolutivité heap** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Metric | Parallel GC | G1GC | ZGC |
+|--------|-------------|------|-----|
+| **Throughput** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Average Latency** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Max Pauses** | ⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Predictability** | ⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Heap Scalability** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 
-### 3. Consommation de Ressources
+### 3. Resource Consumption
 
 #### CPU Overhead
-- **Parallel GC** : Faible pendant l'exécution, pics élevés pendant GC
-- **G1GC** : Modéré et constant, travail concurrent
-- **ZGC** : Plus élevé de base, mais très stable
+- **Parallel GC**: Low during execution, high spikes during GC
+- **G1GC**: Moderate and constant, concurrent work
+- **ZGC**: Higher baseline, but very stable
 
-#### Mémoire Overhead
-- **Parallel GC** : ~2-5% du heap
-- **G1GC** : ~5-10% du heap (remembered sets, card tables)
-- **ZGC** : ~10-20% du heap (colored pointers, metadata)
+#### Memory Overhead
+- **Parallel GC**: ~2-5% of heap
+- **G1GC**: ~5-10% of heap (remembered sets, card tables)
+- **ZGC**: ~10-20% of heap (colored pointers, metadata)
 
-## Configuration et Tuning
+## Configuration and Tuning
 
 ### Parallel GC
 ```bash
-# Configuration basique
+# Basic configuration
 -XX:+UseParallelGC
 
-# Tuning avancé
+# Advanced tuning
 -XX:MaxGCPauseMillis=200
 -XX:GCTimeRatio=19
 -XX:NewRatio=2
@@ -111,17 +111,17 @@ E = Eden, S = Survivor, O = Old, H = Humongous
 
 # Monitoring (Java 9+)
 -Xlog:gc*:gc.log:time
-# Ou pour Java 8
+# Or for Java 8
 -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
 ```
 
 ### G1GC
 ```bash
-# Configuration basique
+# Basic configuration
 -XX:+UseG1GC
 -XX:MaxGCPauseMillis=200
 
-# Tuning avancé
+# Advanced tuning
 -XX:G1HeapRegionSize=16m
 -XX:G1NewSizePercent=20
 -XX:G1MaxNewSizePercent=40
@@ -130,69 +130,69 @@ E = Eden, S = Survivor, O = Old, H = Humongous
 
 # Monitoring (Java 9+)
 -Xlog:gc*:gc.log:time
-# Ou pour Java 8
+# Or for Java 8
 -XX:+PrintGC -XX:+PrintGCDetails
 ```
 
 ### ZGC
 ```bash
-# Configuration basique
+# Basic configuration
 -XX:+UseZGC
-# Note: -XX:+UnlockExperimentalVMOptions plus nécessaire depuis Java 17
+# Note: -XX:+UnlockExperimentalVMOptions no longer needed since Java 17
 
-# Tuning avancé
+# Advanced tuning
 -XX:SoftMaxHeapSize=30g
 -Xlog:gc*:gc.log:time
 
-# Java 21+ - ZGC Generational (expérimental)
+# Java 21+ - ZGC Generational (experimental)
 -XX:+UseZGC -XX:+UnlockExperimentalVMOptions -XX:+UseZGenerationalGC
 ```
 
-## Cas d'Usage Recommandés
+## Recommended Use Cases
 
-### Utilisez Parallel GC quand :
-✅ **Le débit est prioritaire sur la latence**
-- Applications batch
-- Traitement de données massives
-- Calculs scientifiques
+### Use Parallel GC when:
+✅ **Throughput is prioritized over latency**
+- Batch applications
+- Massive data processing
+- Scientific computing
 - ETL processes
 
-✅ **Heap de taille modérée (< 4GB)**
+✅ **Moderate heap size (< 4GB)**
 
-✅ **Pauses GC acceptables (> 100ms)**
+✅ **Acceptable GC pauses (> 100ms)**
 
-### Utilisez G1GC quand :
-✅ **Équilibre débit/latence requis**
-- Applications web avec SLA modérés
-- Services métier avec contraintes de latence
-- Applications avec heap 4GB-32GB
+### Use G1GC when:
+✅ **Balance between throughput/latency required**
+- Web applications with moderate SLAs
+- Business services with latency constraints
+- Applications with 4GB-32GB heap
 
-✅ **Pauses prévisibles importantes**
-- SLA avec contraintes de latence (< 100ms)
-- Applications interactives
+✅ **Predictable pauses important**
+- SLAs with latency constraints (< 100ms)
+- Interactive applications
 
-✅ **Heap de grande taille avec allocation mixed**
+✅ **Large heap with mixed allocation patterns**
 
-### Utilisez ZGC quand :
-✅ **Latence ultra-faible critique**
+### Use ZGC when:
+✅ **Ultra-low latency critical**
 - Trading systems
-- Applications temps réel
+- Real-time applications
 - Gaming servers
-- Applications haute fréquence
+- High-frequency applications
 
-✅ **Très gros heap (> 32GB)**
-- Applications Big Data
-- Caches en mémoire massifs
-- Analytics en temps réel
+✅ **Very large heap (> 32GB)**
+- Big Data applications
+- Massive in-memory caches
+- Real-time analytics
 
-✅ **Pauses < 10ms indispensables**
+✅ **Pauses < 10ms indispensable**
 
-## Métriques de Performance
+## Performance Metrics
 
-### Métriques clés à surveiller
+### Key metrics to monitor
 
 ```java
-// Exemple de monitoring JVM
+// Example JVM monitoring
 public class GCMetrics {
     
     @EventListener
@@ -210,42 +210,42 @@ public class GCMetrics {
 }
 ```
 
-### Seuils d'alerte recommandés
+### Recommended alert thresholds
 
-| Collecteur | Pause Max | Fréquence | Throughput |
-|------------|-----------|-----------|------------|
-| **Parallel GC** | < 1000ms | < 5% du temps | > 95% |
-| **G1GC** | < 200ms | < 5% du temps | > 90% |
-| **ZGC** | < 10ms | Toujours | > 85% |
+| Collector | Max Pause | Frequency | Throughput |
+|-----------|-----------|-----------|------------|
+| **Parallel GC** | < 1000ms | < 5% of time | > 95% |
+| **G1GC** | < 200ms | < 5% of time | > 90% |
+| **ZGC** | < 10ms | Always | > 85% |
 
-## Migration entre Collecteurs
+## Migration Between Collectors
 
-### De Parallel GC vers G1GC
+### From Parallel GC to G1GC
 ```bash
-# Avant
+# Before
 -XX:+UseParallelGC -Xmx8g
 
-# Après - Migration progressive
+# After - Progressive migration
 -XX:+UseG1GC -Xmx8g -XX:MaxGCPauseMillis=200
 
-# Monitoring pendant 1-2 semaines
-# Ajustement si nécessaire
+# Monitor for 1-2 weeks
+# Adjust if necessary
 -XX:G1HeapRegionSize=16m
 ```
 
-### De G1GC vers ZGC
+### From G1GC to ZGC
 ```bash
-# Avant
+# Before
 -XX:+UseG1GC -Xmx32g -XX:MaxGCPauseMillis=100
 
-# Après - Test en staging d'abord
+# After - Test in staging first
 -XX:+UseZGC -Xmx32g
 -XX:SoftMaxHeapSize=30g
 
-# Monitoring intensif requis
+# Intensive monitoring required
 ```
 
-## Troubleshooting Commun
+## Common Troubleshooting
 
 ### Parallel GC - Long pauses
 ```bash
@@ -254,8 +254,8 @@ public class GCMetrics {
 -Xlog:gc*:gc.log:time
 
 # Solutions
--XX:MaxGCPauseMillis=100  # Réduction target
--XX:NewRatio=1           # Plus de young gen
+-XX:MaxGCPauseMillis=100  # Reduce target
+-XX:NewRatio=1           # More young gen
 ```
 
 ### G1GC - Mixed GC issues
@@ -265,43 +265,44 @@ public class GCMetrics {
 -Xlog:gc+heap=debug:gc-heap.log:time
 
 # Solutions
--XX:G1MixedGCCountTarget=16     # Plus de mixed GC
--XX:G1OldCSetRegionThreshold=5  # Moins de régions par cycle
+-XX:G1MixedGCCountTarget=16     # More mixed GC
+-XX:G1OldCSetRegionThreshold=5  # Fewer regions per cycle
 ```
 
 ### ZGC - High allocation rate
 ```bash
 # Diagnostics
 -Xlog:gc*:gc.log:time
+-Xlog:gc+heap=debug:gc-heap.log:time
 
 # Solutions
--XX:SoftMaxHeapSize=28g  # Plus de marge
--XX:ZCollectionInterval=1 # GC plus fréquent
+-XX:SoftMaxHeapSize=28g  # More headroom
+# Note: ZCollectionInterval and ZUncommitDelay have been removed
 ```
 
-## Outils de Monitoring
+## Monitoring Tools
 
 ### GCViewer
 ```bash
-# Export des logs (Java 9+)
+# Export logs (Java 9+)
 -Xlog:gc*:gc.log:time
 
-# Pour Java 8
+# For Java 8
 -Xloggc:gc.log -XX:+UseGCLogFileRotation
 -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=10M
 
-# Analyse avec GCViewer
+# Analysis with GCViewer
 java -jar gcviewer.jar gc.log
 ```
 
 ### JProfiler / VisualVM
-- Monitoring en temps réel
-- Analyse des tendances
-- Corrélation avec les métriques applicatives
+- Real-time monitoring
+- Trend analysis
+- Correlation with application metrics
 
 ### Prometheus + Grafana
 ```yaml
-# Métriques JVM
+# JVM metrics
 jvm_gc_pause_seconds
 jvm_gc_memory_allocated_bytes_total
 jvm_gc_memory_promoted_bytes_total
@@ -309,10 +310,10 @@ jvm_gc_memory_promoted_bytes_total
 
 ## Conclusion
 
-Le choix du GC dépend fortement du contexte applicatif :
+GC choice heavily depends on application context:
 
-- **Parallel GC** reste le meilleur choix pour les applications orientées débit
-- **G1GC** offre le meilleur compromis pour la majorité des applications
-- **ZGC** est indispensable pour les applications critiques en latence
+- **Parallel GC** remains the best choice for throughput-oriented applications
+- **G1GC** offers the best compromise for most applications
+- **ZGC** is essential for latency-critical applications
 
-La migration doit toujours être testée en profondeur avec les charges réelles de production avant déploiement.
+Migration should always be thoroughly tested with real production workloads before deployment.
